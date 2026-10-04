@@ -4,6 +4,10 @@ This repository is a fork of [fstark/apple1loader](https://github.com/fstark/app
 
 The fork keeps the original Apple-1 ROM and build system, and also adds a **Briel Replica-1 TE specific 32 KiB ROM image**, additional Apple-1 software, and supporting files used while adapting the loader to the Replica-1 TE memory map.
 
+<img width="738" height="518" alt="Jurassic_64KB_RAM_ROM_Card" src="https://github.com/user-attachments/assets/9fa3ca5e-0e5b-4510-b439-f98589f04247" />
+<img width="1072" height="897" alt="Jurassic_64KB_RAM_ROM_Card_Menu" src="https://github.com/user-attachments/assets/74c9608e-74e0-4412-b279-e9adebb7168c" />
+<img width="1032" height="1032" alt="Jurassic_64KB_RAM_ROM_Card_Apps" src="https://github.com/user-attachments/assets/a3c032b0-c291-4fac-bce0-0749998df094" />
+
 ## ROM images
 
 | File | Target | Start | Status |
