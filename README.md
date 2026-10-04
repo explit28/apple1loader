@@ -1,253 +1,279 @@
-# Loader for the Aberco/SiliconInsider Apple1 64K RAM/ROM Card
+# Apple-1 Loader ROMs
 
-This is the loader for aberco/SiliconInsider 64K ROM for the Apple1
+This repository is a fork of [fstark/apple1loader](https://github.com/fstark/apple1loader), the ROM loader by **Fred Stark** and **Antoine Bercovici** for the Aberco / SiliconInsider Apple-1 64K RAM/ROM card.
 
-It contains an assortment of software for the Apple1, to test and demo the machine.
+The fork keeps the original Apple-1 ROM and build system, and also adds a **Briel Replica-1 TE specific 32 KiB ROM image**, additional Apple-1 software, and supporting files used while adapting the loader to the Replica-1 TE memory map.
 
-The rom file is [32KA1COMPIL.BIN](32KA1COMPIL.BIN).
+## ROM images
 
-You can build the ROM using the top-level Makefile, if you have the right tools installed (xa assembler, ca65 tool suite, python3).
+| File | Target | Start | Status |
+| --- | --- | --- | --- |
+| `32KA1COMPIL.BIN` | Original Apple-1 + Aberco/SiliconInsider 64K RAM/ROM card | `2000R` | Original/upstream image; rebuilt by the current `Makefile` |
+| `32KREPLICA1.BIN` | Briel Replica-1 TE + Jurassic/Aberco-style 64K RAM/ROM card | `9000R` | Replica-1 TE variant; currently provided as a prebuilt 32 KiB image |
 
-# Content of the ROM
+> **Important:** the current top-level `Makefile` still builds `32KA1COMPIL.BIN`. It does **not** regenerate `32KREPLICA1.BIN`.
 
-When booting you Apple1 (if you mapped the $F000-$FFFF region), or after executing ``2000R``, you will be greated by this menu (after having cleared the screen and pressed reset):
+---
 
-![The welcome menu](images/menu.png)
+# Replica-1 TE ROM
 
-You don't have to wait for the menu to display: you can type the key corresponding to the program you want to execute during the display.
+`32KREPLICA1.BIN` is adapted for the **Briel Replica-1 TE**, which differs significantly from a stock Apple-1 memory configuration.
 
-You can always return to the menu, by pressing the Reset key (and entering ``2000R`` if needed).
+The Replica-1 TE already provides:
 
-*Authors: Fred Stark and Antoine Bercovici (2024)*
+- RAM at `$0000-$7FFF`
+- PIA / I/O in the `$D000` page
+- Integer BASIC at `$E000`
+- Krusader at `$F000`
+- Woz Monitor at `$FF00`
 
-## Mandelbrot
+For that reason the Replica-1 image does not duplicate Integer BASIC, Krusader or WozMon in the external ROM. The loader menu simply jumps to the corresponding built-in entry points.
 
-Pressing **``M``** will launch a fast mandelbrot explorer, written specifically for this ROM.
+Start the loader from WozMon with:
 
-Source available at: https://github.com/fstark/mandelbrot65/
+```text
+9000R
+```
 
-It will display a short introduction message, and display the Mandelbrot set.
+## Replica-1 TE menu
 
-![The mandelbrot set](images/mandelbrot-1.png)
+The visual layout follows the original Apple-1 Loader menu while keeping the Replica-1 TE specific program set:
 
-I will then wait for 5 seconds, and zoom in a random-but-interesting place. It will then zoom into the zoom, up to 5 levels of zooms.
+```text
+   FREDERIC STARK & ANTOINE BERCOVICI
+========================================
+M) MANDELBROT       1) APPLE 30TH
+K) KRUSADER         2) TIC-TAC-TOE
+I) INTEGER BASIC    3) LUNAR LANDER
+R) BASIC RE-ENTRY   4) LITTLE TOWER
+P) 15-PUZZLE        5) C64 MAZE
+L) LIFE             6) MICROCHESS
+C) DISPLAY TEST     7) PASART
+W) WOZMON           8) CELLULAR
+E) MINI ASSEMBLER   9) MASTERMIND
+?) MEMORY MAP       0) NIM
+===================================V1.2=
+YOUR CHOICE ->
+```
 
-![A zoom](images/mandelbrot-2.png)
+The large `APPLE LOADER` ASCII logo is displayed above the author line.
 
-You can skip a display by pressing ``space``. You can return the the top-level Mandelbrot set by pressing ``space`` twice in succession.
+### Direct Replica-1 TE entries
 
-*Author: [Fred Stark (2024)](https://github.com/fstark/mandelbrot65/)*
+| Key | Function | Entry point |
+| --- | --- | ---: |
+| `I` | Integer BASIC | `$E000` |
+| `R` | BASIC re-entry / warm entry | `$E2B3` |
+| `K` | Krusader | `$F000` |
+| `W` | Woz Monitor | `$FF00` |
 
-## WozMon
+These entries use software already present in the Replica-1 TE ROM.
 
-**``W``** gives you access to Wozmom. This is useful if you chose to map the $f000-$ffff space, as the Apple1 would now boot the loader instead of the Wozniak monitor.
+### Added / adapted entries
 
-![The Wozniak Monitor](images/wozmon.png)
+- `P` — **15-Puzzle**, loaded into RAM at `$0300`.
+- `L` — **Life**, loaded into RAM at `$6000`.
+- `C` — **Display Test** adapted for the Replica-1 TE display path.
+- `E` — **Mini Assembler**.
+- `?` — **Memory Map** utility adapted to the Replica-1 TE layout. The complete routine includes the CRC code needed when ROM is encountered and returns to the custom loader menu.
+- The original numbered applications `1` through `0`, plus `M` Mandelbrot, are retained.
 
-The fundamental commands to remember are:
+## Why the Apple II Monitor is not in the Replica-1 image
 
-* ``adrs1.adrs2`` to display the memory between ``adrs1`` and ``adrs2``
-* ``adrsR`` to **R**un at address ``adrs``
-* ``adrs:value1 value2 value3...`` to store ``value1``, ``value2``, ``value3`` starting at ``adrs``. Beware that the display shows the content of the previous value at ``adrs``. This can be confusing sometimes.
+The upstream loader includes an Apple II Monitor entry around `$73F0`. On a Replica-1 TE, `$0000-$7FFF` is already occupied by the machine's internal 32 KiB RAM.
 
-*Author: Steve Wozniak (1976)*
+Mapping the external card as ROM in page `7` would therefore overlap the Replica-1 TE RAM and can cause bus contention. The Apple II Monitor was consequently left out of the final Replica-1 TE ROM.
 
-## Integer BASIC
+WozMon remains available through `W`, using the Replica-1 TE's built-in monitor at `$FF00`.
 
-**``I``** is for Integer BASIC, which is the original basic of the Apple1.
+## RAM/ROM card mapping for the Replica-1 TE
 
-The BASIC is present in the ROM and should be mapped to $E000.
+The Replica-1 image stores loader/program data in the external ROM pages `$8000-$CFFF`.
 
-![The Integer BASIC](images/basic-1.png)
+For the Replica-1 TE configuration used for this ROM:
 
-You can now create amazing ``10 PRINT``, ``20 GOTO 10`` demos!
+```text
+External card ROM: 8, 9, A, B, C
+Do not map:         0-7, D, E, F
+```
 
-This also served as the basis for the BASIC that shipped with the original Apple2. [Here is the original manual for the basic](https://ia801902.us.archive.org/11/items/apple1_basic_manual/apple1_basic_manual.pdf).
+The reason is:
 
-Note that Integer BASIC defaults to 4K of RAM. If you have 8K, you may want to use ``HIMEM=8192`` before typing in your program. However, as you can't have both the ROM card and a Cassette Interface Card, it is unlikely you will find use for that much memory.
+| Page(s) | Replica-1 TE use |
+| --- | --- |
+| `$0000-$7FFF` | Internal 32 KiB RAM — do not overlay with the card |
+| `$8000-$CFFF` | External loader/program ROM |
+| `$D000-$DFFF` | PIA / I/O |
+| `$E000-$EFFF` | Built-in Integer BASIC |
+| `$F000-$FFFF` | Built-in Krusader / WozMon area |
 
-*Author: Steve Wozniak (1976)*
+In particular, **do not enable external ROM page `7`** on a Replica-1 TE.
 
-## Re-entering BASIC
+The `C` page must be available to the ROM for this image. This configuration assumes that no Apple-1 Cassette Interface is occupying that page.
 
-When you hit reset, you can re-enter the BASIC without losing the current program by using the **``R``** key.
+> Jumper labels and ROM/RAM selection details can vary by card revision. Avoid enabling two devices for the same address range.
 
-![Re-entering the BASIC](images/basic-2.png)
+## Replica-1 TE display detail
 
-The program we entered in BASIC is still present.
+The Replica-1 TE character display is 40 columns wide. Writing the 40th printable character already advances to the next row.
 
-*Author: Steve Wozniak (1976)*
+For the menu separator lines, the Replica-1 image therefore deliberately does **not** output an additional carriage return after the 40th character. Otherwise an empty row is consumed and the first row of the `APPLE LOADER` ASCII art scrolls off the 24-row display.
 
-## Testing 8K of memory
+This behavior was verified on real Replica-1 TE hardware.
 
-Press **``A``** to execute a 8K memory test, on adresses from ``$0000`` to ``$1FFF``.
+---
 
-![8K memory test](images/8k-memory.png)
+# Original Apple-1 ROM
 
-Each pass will take around 13 seconds.
+`32KA1COMPIL.BIN` is the original/upstream loader image.
 
-*Author: Mike Willegal (2010)*
+It is built from `32KA1COMPIL.json` and the sources and binaries in `src/`, `software/` and `patches/`.
 
-## Testing 4K of memory
+Start it with:
 
-If you Apple1 only have 4K of memory, from ``$0000`` to ``$0fff``, press **``B``** for a memory test.
+```text
+2000R
+```
 
-![4K memory test](images/4k-memory.png)
+The original configuration includes the Apple II Monitor, Apple II Mini-Assembler, memory tests, Integer BASIC and WozMon according to the upstream memory map.
 
-Each pass will take around 6 seconds.
+For the original ROM's detailed program descriptions and hardware assumptions, see the upstream project:
 
-*Author: Mike Willegal (2010)*
+https://github.com/fstark/apple1loader
 
-## Testing the display
+Do not use the Replica-1 TE jumper configuration above as a general configuration for the original Apple-1 image; the two ROMs target different memory layouts.
 
-With **``C``** you can test the display of your Apple1.
+---
 
-![Display test](images/display-test.png)
+# Additional software
 
-This is useful to check that your Apple1 Character ROM is correct by comparing your display with the above screenshot. [It was the sample code given in the Apple 1 manual](https://s3data.computerhistory.org/brochures/apple.applei.1976.102646518.pdf) to verify proper functionality of the computer.
+The fork also contains additional Apple-1 program images in `software/` for preservation, testing and possible future ROM builds.
 
-*Author: Steve Wozniak (1976)*
+Examples include:
 
-## Using the Apple2 Monitor
+```text
+15-puzzle
+life
+aceyducey
+adventure
+bowling
+buzzword
+codebreaker
+craps
+deal
+hammurabi
+hundred
+slots
+startrek
+wumpus
+```
 
-**``D``** will launch the Apple2 monitor, as you would on a Apple2, using ``CALL -151``.
+Not every file in `software/` is included in `32KREPLICA1.BIN`.
 
-![The Apple2 Monitor](images/apple2-monitor.png)
+In particular, some programs were evaluated during development but were intentionally not kept in the final menu. Files that are present in the repository should therefore not automatically be interpreted as contents of either ROM image.
 
-This is useful, for instance, to disassemble memory.
+---
 
-*Authors: Steve Wozniak and Allen Baum (1977). Port by Winston Gayler, Wendell Sander and Jeff Tranter*
+# Building the upstream ROM
 
-## Using the Apple2 Mini-Assembler
+The existing build system is inherited from the upstream repository.
 
-**``E``** will launch the Apple2 mini-assembler. It was included with the early Integer BASIC versions of the Apple2.
+Requirements include:
 
-![The Apple2 mini-assembler](images/mini-assembler.png)
+- `python3`
+- `xa`
+- the `cc65` toolchain (`ca65` / `ld65`)
+- `wget`
+- optionally `minipro` for EEPROM programming
 
-This version have been modified, so entering a '#' in the first column will launch Wozmon. In the above example a simple program that writes an infinite number of ``A`` on screen has been assembled at adress ``$0280``. Then ``#`` is used to launch Wozmon and ``280R`` executes our new assembled software.
+Build the original image with:
 
-*Author: Allen Baum (1976)*
+```sh
+make
+```
 
-## Displaying the Memory Map of your Apple 1
+This creates:
 
-Pressing **``?``** will launch a small utility that displays the memory mapping of your Apple 1. It should be self-explanatory:
+```text
+32KA1COMPIL.BIN
+```
 
-![Memory mapping](images/memory-map.jpg)
+The EEPROM target is:
 
-This will allow you to check that the jumpers on the RAM/ROM card are properly configured (addresses at 5000-5FFF, 7000-CFFF and E000-EFFF must be mapped to the card). Mapping F000-FFFF is optional but helps by having ``Reset`` directly laucnhing the menu (You will need to deactivate the on-board Wozmon). Directly booting to the card also activate some tests of the low memory of the Apple1: it will print ``ZP?`` or ``SP?`` in a loop if the zero page or the stack page are not writable. Can be useful to debug your Apple1.
+```sh
+make eeprom
+```
 
-*Author: Fred Stark (2024)*
+The current Makefile programs an `X28C256` with `minipro`.
 
-## The Apple 30th Demo
+## Replica-1 image build status
 
-**``1``** will launch the famous Apple 30th Anniversary Demo.
+At present, `32KREPLICA1.BIN` is committed as a **prebuilt image**. The current `Makefile` and `32KA1COMPIL.json` describe the upstream `32KA1COMPIL.BIN`, not the Replica-1 TE variant.
 
-![The Woz, in the Apple 30th demo](images/apple-30th.png)
+Therefore:
 
-*Author: Dave Schmenk (2006)*
+```sh
+make
+```
 
-## Playing Tic-Tac-Toe
+does **not** reproduce `32KREPLICA1.BIN`.
 
-**``2``** will launch a classic from the late 70s, early 80s: a BASIC tic-tac-toe game, shown here in a somewhat precarious position.
+A future improvement would be to add a separate configuration/build target, for example:
 
-![Playing Tic-Tac-Toe](images/tic-tac-toe-1.png)
+```text
+32KREPLICA1.json
+make replica1
+```
 
-This is a BASIC program. Pressing ``Reset`` and choosing to re-enter BASIC with the ``R`` option will let you admire the source code:
+so the Replica-1 image can be rebuilt entirely from source.
 
-![Looking at Tic-Tac-Toe](images/tic-tac-toe-2.png)
+---
 
-*Author: [Larry Nelson (1977)](https://www.applefritter.com/node/2902)*
+# Repository layout
 
-## Landing on the Moon
+```text
+.
+├── 32KA1COMPIL.BIN      # upstream 32 KiB ROM
+├── 32KA1COMPIL.json     # upstream ROM layout/configuration
+├── 32KREPLICA1.BIN      # Replica-1 TE 32 KiB ROM
+├── Makefile              # currently builds the upstream image
+├── makerom.py            # ROM image builder
+├── src/                  # assembled source programs / loader code
+├── patches/              # patches used by the upstream image
+├── software/             # program binaries and added Apple-1 software
+├── utils/                # helper tools
+└── images/               # screenshots / documentation images
+```
 
-**``3``** is for Lunar Lander, a huge classic back in the day.
+---
 
-![Lunar Lander](images/lunar-lander.png)
+# Credits
 
-This game needs no introduction or explanations. It is also harder than it looks...
+The original loader project, ROM layout and menu were created by **Fred Stark** and **Antoine Bercovici** in 2024.
 
-*Author: Unknown, please contact (github issue) if you have info.*
+The ROM collection incorporates historical Apple-1 software from multiple authors. Important credits from the upstream project include:
 
-## A small adventure
+| Software | Author / credit |
+| --- | --- |
+| WozMon | Steve Wozniak, 1976 |
+| Integer BASIC | Steve Wozniak, 1976 |
+| Apple 30th Anniversary Demo | Dave Schmenk, 2006 |
+| Tic-Tac-Toe | Larry Nelson, 1977 |
+| Little Tower | Arnaud Verhille, 2000; fixes by Fred Stark, 2024 |
+| C64 Maze | Antoine Bercovici, 2024 |
+| Micro-Chess | Peter R. Jennings, 1976 |
+| Mini-Assembler | Allen Baum, 1976 |
+| Mandelbrot | Fred Stark, 2024 |
+| Memory Map | Fred Stark, 2024 |
+| Lunar Lander | author currently unknown |
+| PasArt | author currently unknown |
+| Cellular | author currently unknown |
+| Nim | author currently unknown |
 
-**``4``** brings *Little Tower* a small text adventure game for the Apple 1. It is pretty rough on the edges, but you should be able to beat it in a few minutes.
+The Replica-1 TE image is an adaptation of that work for the Briel Replica-1 TE and its different RAM/ROM map.
 
-![Little Tower](images/little-tower.png)
+Please preserve the original authorship information when redistributing binaries or derived ROM images.
 
-The version included has been patched so one can actually get the key and finish the game...
+## Licensing
 
-*Author: Arnaud Verhille (2000). Fixes by Fred Stark (2024)*
-
-## C64 Maze
-
-Press **``5``** and you will cover the screen in little ``/`` and ``\``, re-creating the classic Commodore 64 BASIC one-liner.
-
-![A C64-like maze](images/c64-maze.png)
-
-*Author: Antoine Bercovici (2024)*
-
-## Micro-Chess
-
-With **``6``** you get the extraordinary micro-chess, a chess program written originaly for the KIM-1
-
-![Microchess playing the French Defense](images/chess.png)
-
-You can guess my nationality by looking at the above chessboard...
-
-You move the pieces by specifying the from and to squares (13-33 for e2-e4, for instance), and you tell the computer to play by pressing the ``P`` key.
-
-The documentation of [this versions seems to match the one on the apple1](http://retro.hansotten.nl/6502-sbc/lee-davison-web-site/microchess/). The [original microchess is available too](https://www.benlo.com/microchess/Kim-1Microchess.html), but won't explain the key bindings of the Apple1...
-
-What an extraordinary feat from Peter R. Jennings to get a full chess program in 1 kilobyte of code!
-
-*Author: Peter R. Jennings (1976)*
-
-## PasArt
-
-PasArt is **``7``**. Not sure why it is called this way, but you can get some interesting patterns by tring various values.
-
-![A PasArt image](images/pasart.png)
-
-Try other numbers, like ``18,35,9,1``, ``18,35,61,2`` or ``19,39,55,2``...
-
-*Author: Unknown, please contact (github issue) if you have info.*
-
-## Cellular
-
-Cellular automaton always have been classic for display on old computers, and the Apple1 is no exception. Use **``8``** to run Cellular, a [1d cellular automaton](https://en.wikipedia.org/wiki/Elementary_cellular_automaton). Don't get fooled by the apparent simplicity, [some people believe they contain the secret of eveything](https://en.wikipedia.org/wiki/A_New_Kind_of_Science).
-
-![Rule 30 automaton](images/cellular.png)
-
-Above is the famous rule 30 automaton (1E in hex). [You can look up the rules from there](https://mathworld.wolfram.com/ElementaryCellularAutomaton.html), but will have to enter them in hexadecimal...
-
-*Author: Unknown, please contact (github issue) if you have info.*
-
-## Mastermind
-
-Press **``9``** for the original implementation of Mastermind on the Apple1.  Mastermind was a popular board game in the 70s and early 80s.
-
-![A game of Mastermind](images/mastermind.png)
-
-You are trying to find the code, composed by numbers from 0 to 7. 
-
-This is quite difficult, as the numbers can be repeated. You enter a potential solution, and you get a '+' for every number in the right position, and a '-' for every number in the wrong position.
-
-The game comes from [Volume 1, Number 8, Page 26 of "Dr Dobb's Journal of Computer Calisthenics & Orthodontia", September 1976](http://cini.classiccmp.org/pdf/DrDobbs/DrDobbs-1976-09-v1n8.pdf). Yes, this is how we distributed software before the internet... Beware that in the time you often typed code from magazine to find they were not working as expected. This is no different, and the above listing contains a bug (GUESS at $FB is too high, and GUESS+5 will be $100, wreaking havoc on the code...). As I had to change the code and am very bad at mastermind, I added a small trick: pressing ``@`` when ``READY?`` is displayed will switch to *easy mode*, where each number will be used at most once in the code... A simple ``#define`` lets you revert to the original fixed code.
-
-In the same issue of Dr Dobb's, you'll find the source code of the 6502 Disassembler above, and, page 35, the original criticism of the 56-bits DES encryption algorithm by Hellman and Diffie themselves...
-
-*Author: Steve Wozniak (1976)*
-
-## Nim
-
-Finally, **``0``** will launch [a game of Nim](https://en.wikipedia.org/wiki/Nim), an ancien game, very popular on early computers, as it is easy to program and have an elegant mathematical way for the computer to play.
-
-![A game of Nim](images/nim.png)
-
-At the begining you choose how many heaps you want, and how many objects you want on each heap. Remember that you will play first.
-
-At each turn, you have to choose a heap, and remove at least one object from it. The player that removes the last object from the last heap wins (this is the opposite of the way it is commonly played, but doesn't change the core game).
-
-Have fun, but if you don't play absolutely perfectly, your Apple 1 will always win...
-
-*Author: Unknown, please contact (github issue) if you have info.*
+This repository contains software from several historical sources and does not currently expose a single root license covering every component. Check the provenance and licensing of individual files before redistribution or reuse.
