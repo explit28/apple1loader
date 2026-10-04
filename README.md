@@ -1,6 +1,7 @@
 # Apple-1 Loader ROMs
 
-This repository is a fork of [fstark/apple1loader](https://github.com/fstark/apple1loader), the ROM loader by **Fred Stark** and **Antoine Bercovici** for the Aberco / SiliconInsider Apple-1 64K RAM/ROM card.
+This repository is a fork of [fstark/apple1loader](https://github.com/fstark/apple1loader), the ROM loader by **Fred Stark** and **Antoine Bercovici** 
+for the Aberco / SiliconInsider / Jurassic Computing Apple-1 64K RAM/ROM card.
 
 The fork keeps the original Apple-1 ROM and build system, and also adds a **Briel Replica-1 TE specific 32 KiB ROM image**, additional Apple-1 software, and supporting files used while adapting the loader to the Replica-1 TE memory map.
 
