@@ -88,6 +88,14 @@ The `APPLE LOADER` screen and menu will appear.
 
 ## Replica-1 TE hardware configuration
 
+### Apple-1 64K RAM/ROM card
+
+The Replica-1 TE ROM in this repository is intended for the Apple-1 64K RAM/ROM card used by the original loader project.
+
+![Apple-1 64K RAM/ROM card overview](images/Jurassic_64KB_RAM_ROM_Card_Technical_Details.jpg)
+
+The card contains a 32 KiB ROM/EEPROM and a 32 KiB RAM device. Its configuration jumpers select, in 4 KiB blocks, whether an address range is provided by ROM, RAM, or neither.
+
 The Briel Replica-1 TE already provides the following memory and firmware:
 
 | Address range / entry | Replica-1 TE function |
@@ -99,6 +107,14 @@ The Briel Replica-1 TE already provides the following memory and firmware:
 | `$FF00` | Woz Monitor |
 
 The external RAM/ROM card therefore must not replace these areas.
+
+### 64K RAM/ROM card memory map
+
+The original card documentation shows how the 32 KiB ROM/RAM address space is mapped into the Apple-1 CPU address space:
+
+![Apple-1 64K RAM/ROM card memory map](images/Jurassic_64KB_RAM_ROM_Card_Technical_Details2.jpg)
+
+For the Replica-1 TE we deliberately use only selected external ROM pages, because the Replica-1 already supplies RAM, I/O, Integer BASIC, Krusader, and WozMon in other regions.
 
 ### External ROM pages used by this image
 
@@ -136,6 +152,8 @@ This configuration assumes that an Apple-1 Cassette Interface is **not** occupyi
 ## Replica-1 TE menu
 
 The visual arrangement follows the original Apple-1 Loader menu as closely as possible while replacing functions that are not appropriate for the Replica-1 TE.
+
+![Apple-1 Loader menu](images/menu%281%29.png)
 
 ```text
    FREDERIC STARK & ANTOINE BERCOVICI
