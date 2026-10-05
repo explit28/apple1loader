@@ -1,54 +1,141 @@
 # Apple-1 Loader ROMs
 
-This repository is a fork of [fstark/apple1loader](https://github.com/fstark/apple1loader), the ROM loader by **Fred Stark** and **Antoine Bercovici** for the Aberco / SiliconInsider Apple-1 64K RAM/ROM card.
+ROM images and documentation for the **Apple-1 64K RAM/ROM card** and the **Briel Replica-1 TE**.
 
-The fork keeps the original Apple-1 ROM and build system, and also adds a **Briel Replica-1 TE specific 32 KiB ROM image**, additional Apple-1 software, and supporting files used while adapting the loader to the Replica-1 TE memory map.
+This repository is a fork of [fstark/apple1loader](https://github.com/fstark/apple1loader), the ROM loader by **Fred Stark** and **Antoine Bercovici** for the Aberco / SiliconInsider / Jurassic Computing Apple-1 64K RAM/ROM card.
 
-<img width="1032" height="1032" alt="Jurassic_64KB_RAM_ROM_Card_Technical_Details" src="https://github.com/user-attachments/assets/3cd5f8a3-a087-44db-b6c9-4f6068177d17" />
-<img width="1032" height="1032" alt="Jurassic_64KB_RAM_ROM_Card_Technical_Details2" src="https://github.com/user-attachments/assets/e40b2ef7-6ed8-4e62-ba90-5462d0681be2" />
-<img width="738" height="518" alt="ROM_RAM_Card" src="https://github.com/user-attachments/assets/67717195-a4a8-4961-a18a-8ac29fc3344e" />
-<img width="1280" height="960" alt="A1LoaderMenu" src="https://github.com/user-attachments/assets/46b21d05-b75a-4fb4-8aa6-498efe7d9b4a" />
-
-## ROM images
-
-| File | Target | Start | Status |
-| --- | --- | --- | --- |
-| `32KA1COMPIL.BIN` | Original Apple-1 + Aberco/SiliconInsider 64K RAM/ROM card | `2000R` | Original/upstream image; rebuilt by the current `Makefile` |
-| `32KREPLICA1.BIN` | Briel Replica-1 TE + Jurassic/Aberco-style 64K RAM/ROM card | `9000R` | Replica-1 TE variant; prebuilt 32 KiB image, tested on real Replica-1 TE hardware |
-
-> **Important:** the current top-level `Makefile` still builds `32KA1COMPIL.BIN`. It does **not** regenerate `32KREPLICA1.BIN`.
+The fork keeps the original Apple-1 ROM and build system and adds a dedicated **Replica-1 TE 32 KiB ROM image**, additional Apple-1 software, and compatibility changes for the Replica-1 TE memory map.
 
 ---
 
-# Replica-1 TE ROM
+## Contents
 
-`32KREPLICA1.BIN` is adapted for the **Briel Replica-1 TE**, which differs significantly from a stock Apple-1 memory configuration.
+- [ROM images](#rom-images)
+- [Replica-1 TE quick start](#replica-1-te-quick-start)
+- [Replica-1 TE hardware configuration](#replica-1-te-hardware-configuration)
+- [Replica-1 TE menu](#replica-1-te-menu)
+- [Program notes](#program-notes)
+- [Replica-1 TE technical notes](#replica-1-te-technical-notes)
+- [Original Apple-1 ROM](#original-apple-1-rom)
+- [Additional software](#additional-software)
+- [Building the ROM](#building-the-rom)
+- [Repository layout](#repository-layout)
+- [Credits](#credits)
+- [Licensing](#licensing)
 
-The Replica-1 TE already provides:
+---
 
-- RAM at `$0000-$7FFF`
-- PIA / I/O in the `$D000` page
-- Integer BASIC at `$E000`
-- Krusader at `$F000`
-- Woz Monitor at `$FF00`
+## ROM images
 
-For that reason the Replica-1 image does not duplicate Integer BASIC, Krusader or WozMon in the external ROM. The loader menu simply jumps to the corresponding built-in entry points.
+| File | Target | Start command | Status |
+| --- | --- | --- | --- |
+| `32KA1COMPIL.BIN` | Original Apple-1 + Aberco/SiliconInsider/Jurassic 64K RAM/ROM card | `2000R` | Original/upstream image; rebuilt by the current `Makefile` |
+| `32KREPLICA1.BIN` | Briel Replica-1 TE + Jurassic/Aberco-style 64K RAM/ROM card | `9000R` | Replica-1 TE image; tested on real Replica-1 TE hardware |
 
-Start the loader from WozMon with:
+> **Important:** the current top-level `Makefile` builds `32KA1COMPIL.BIN`. It does **not** currently regenerate `32KREPLICA1.BIN`.
+
+### Current tested Replica-1 TE image
+
+```text
+File:    32KREPLICA1.BIN
+Size:    32768 bytes
+SHA-256: 08136f67ae5db29fcba36da6de2ae00e9d946a8213330a4457ee44b5f436f2ae
+```
+
+---
+
+# Replica-1 TE
+
+## Replica-1 TE quick start
+
+### 1. Configure the RAM/ROM card
+
+For the current Replica-1 TE image, use external ROM only in pages:
+
+```text
+8 9 A B C
+```
+
+Do **not** map the external card as ROM in:
+
+```text
+0 1 2 3 4 5 6 7 D E F
+```
+
+The most important rule is:
+
+> **Do not enable external ROM page 7 on the Replica-1 TE.**
+
+See [Replica-1 TE hardware configuration](#replica-1-te-hardware-configuration) for the reason.
+
+### 2. Install the ROM
+
+Program `32KREPLICA1.BIN` into the supported 32 KiB ROM/EEPROM used by the 64K RAM/ROM card.
+
+Always power the Apple-1 / Replica-1 off before inserting or removing the card or changing jumpers.
+
+### 3. Start the loader
+
+From Woz Monitor:
 
 ```text
 9000R
 ```
 
-Current tested Replica-1 TE ROM (`32KREPLICA1.BIN`) SHA-256:
+The `APPLE LOADER` screen and menu will appear.
+
+---
+
+## Replica-1 TE hardware configuration
+
+The Briel Replica-1 TE already provides the following memory and firmware:
+
+| Address range / entry | Replica-1 TE function |
+| --- | --- |
+| `$0000-$7FFF` | Internal 32 KiB RAM |
+| `$D000-$DFFF` | PIA / I/O |
+| `$E000` | Integer BASIC |
+| `$F000` | Krusader |
+| `$FF00` | Woz Monitor |
+
+The external RAM/ROM card therefore must not replace these areas.
+
+### External ROM pages used by this image
 
 ```text
-08136f67ae5db29fcba36da6de2ae00e9d946a8213330a4457ee44b5f436f2ae
+External card ROM: 8, 9, A, B, C
+Do not map:         0-7, D, E, F
 ```
+
+| CPU address range | Use |
+| --- | --- |
+| `$0000-$7FFF` | Replica-1 TE internal RAM — do not overlay |
+| `$8000-$CFFF` | External loader/program ROM |
+| `$D000-$DFFF` | Replica-1 TE PIA / I/O |
+| `$E000-$EFFF` | Built-in Integer BASIC |
+| `$F000-$FFFF` | Built-in Krusader / WozMon area |
+
+### Why page 7 must remain disabled
+
+The Replica-1 TE already has RAM at `$7000-$7FFF`.
+
+If external ROM page `7` is enabled at the same time, the external card and the Replica-1 TE RAM can respond to the same addresses. This creates an address-space conflict and can cause bus contention.
+
+For this reason the Replica-1 image deliberately avoids external ROM below `$8000`.
+
+### Page C
+
+The current image uses external ROM page `C`.
+
+This configuration assumes that an Apple-1 Cassette Interface is **not** occupying that address range.
+
+> Jumper labels and ROM/RAM selection details can vary between card revisions. Always verify your card before enabling overlapping address ranges.
+
+---
 
 ## Replica-1 TE menu
 
-The visual layout follows the original Apple-1 Loader menu while keeping the Replica-1 TE specific program set:
+The visual arrangement follows the original Apple-1 Loader menu as closely as possible while replacing functions that are not appropriate for the Replica-1 TE.
 
 ```text
    FREDERIC STARK & ANTOINE BERCOVICI
@@ -69,103 +156,207 @@ YOUR CHOICE ->
 
 The large `APPLE LOADER` ASCII logo is displayed above the author line.
 
-The Replica-1 menu keeps the original loader arrangement as closely as possible. The complete numbered right column (`1` through `0`) remains in the original order. `M`, `W`, `I`, `R`, `C`, `E` and `?` also retain their original rows. Replica-1-specific replacements occupy the rows used by functions that are not used in this image:
+### Relationship to the original menu
 
-- `P) 15-PUZZLE` replaces the original 8K memory-test row.
-- `L) LIFE` replaces the original 4K memory-test row.
-- `K) KRUSADER` occupies the original Apple II Monitor row; the Replica-1 TE already provides Krusader at `$F000`.
+The numbered right column remains in the original order:
 
-### Direct Replica-1 TE entries
+```text
+1  APPLE 30TH
+2  TIC-TAC-TOE
+3  LUNAR LANDER
+4  LITTLE TOWER
+5  C64 MAZE
+6  MICROCHESS
+7  PASART
+8  CELLULAR
+9  MASTERMIND
+0  NIM
+```
 
-| Key | Function | Entry point |
+The original positions of `M`, `W`, `I`, `R`, `C`, `E`, and `?` are also retained.
+
+Only the hardware-specific left-column entries are replaced:
+
+| Original menu row | Replica-1 TE menu |
+| --- | --- |
+| `A) 8K MEMORY TEST` | `P) 15-PUZZLE` |
+| `B) 4K MEMORY TEST` | `L) LIFE` |
+| `D) APPLE2 MONITOR` | `K) KRUSADER` |
+
+---
+
+## Program notes
+
+### Built-in Replica-1 TE programs
+
+These menu entries do not duplicate software in the external ROM. They jump directly to software already present in the Replica-1 TE:
+
+| Key | Program | Entry point |
 | --- | --- | ---: |
 | `W` | Woz Monitor | `$FF00` |
 | `I` | Integer BASIC | `$E000` |
 | `R` | BASIC re-entry / warm entry | `$E2B3` |
 | `K` | Krusader | `$F000` |
 
-These entries use software already present in the Replica-1 TE ROM.
+### Added or adapted programs
 
-### Added / adapted entries
+#### `P` — 15-Puzzle
 
-- `P` — **15-Puzzle**, loaded into RAM at `$0300`.
-- `L` — **Life**, loaded into RAM at `$6000`.
-- `C` — **Display Test** adapted for the Replica-1 TE display path.
-- `7` — **PasArt**, with the documented Apple-1 memory fix applied. The byte at runtime address `$0308` is `$06` instead of `$10`, so PasArt stores its working data from `$0600` rather than `$1000`. This fixed version has been tested successfully on real Replica-1 TE hardware. See [The Apple-1 Software Library: Pasart](https://apple1software.com/fun/pasart/).
-- `E` — **Mini Assembler**.
-- `?` — **Memory Map** utility adapted to the Replica-1 TE layout. The complete routine includes the CRC code needed when ROM is encountered and returns to the custom loader menu.
-- The original numbered applications `1` through `0`, plus `M` Mandelbrot, are retained.
-
-## Why the Apple II Monitor is not in the Replica-1 image
-
-The upstream loader includes an Apple II Monitor entry around `$73F0`. On a Replica-1 TE, `$0000-$7FFF` is already occupied by the machine's internal 32 KiB RAM.
-
-Mapping the external card as ROM in page `7` would therefore overlap the Replica-1 TE RAM and can cause bus contention. The Apple II Monitor was consequently left out of the Replica-1 TE ROM. Its menu row is used by `K) KRUSADER`, which jumps to the Replica-1 TE's built-in Krusader at `$F000`.
-
-WozMon remains available through `W`, using the Replica-1 TE's built-in monitor at `$FF00`, and is kept on the same menu row as in the original loader.
-
-## RAM/ROM card mapping for the Replica-1 TE
-
-The Replica-1 image stores loader/program data in the external ROM pages `$8000-$CFFF`.
-
-For the Replica-1 TE configuration used for this ROM:
+Loaded into RAM at:
 
 ```text
-External card ROM: 8, 9, A, B, C
-Do not map:         0-7, D, E, F
+$0300
 ```
 
-The reason is:
+#### `L` — Life
 
-| Page(s) | Replica-1 TE use |
-| --- | --- |
-| `$0000-$7FFF` | Internal 32 KiB RAM — do not overlay with the card |
-| `$8000-$CFFF` | External loader/program ROM |
-| `$D000-$DFFF` | PIA / I/O |
-| `$E000-$EFFF` | Built-in Integer BASIC |
-| `$F000-$FFFF` | Built-in Krusader / WozMon area |
+Loaded into RAM at:
 
-In particular, **do not enable external ROM page `7`** on a Replica-1 TE.
+```text
+$6000
+```
 
-The `C` page must be available to the ROM for this image. This configuration assumes that no Apple-1 Cassette Interface is occupying that page.
+#### `C` — Display Test
 
-> Jumper labels and ROM/RAM selection details can vary by card revision. Avoid enabling two devices for the same address range.
+Adapted for the Replica-1 TE display path.
 
-## Replica-1 TE display detail
+#### `7` — PasArt
 
-The Replica-1 TE character display is 40 columns wide. Writing the 40th printable character already advances to the next row.
+PasArt uses the documented Apple-1 memory fix from the
+[Apple-1 Software Library](https://apple1software.com/fun/pasart/).
 
-For the menu separator lines, the Replica-1 image therefore deliberately does **not** output an additional carriage return after the 40th character. Otherwise an empty row is consumed and the first row of the `APPLE LOADER` ASCII art scrolls off the 24-row display.
+The original byte:
 
-This behavior was verified on real Replica-1 TE hardware. The current PasArt memory fix was also tested successfully on real Replica-1 TE hardware.
+```text
+$0308 = $10
+```
+
+is changed to:
+
+```text
+$0308 = $06
+```
+
+This moves PasArt's working-data area from:
+
+```text
+$1000
+```
+
+to:
+
+```text
+$0600
+```
+
+The fixed version has been tested successfully on real Replica-1 TE hardware.
+
+#### `E` — Mini Assembler
+
+The Apple II / Apple-1 Mini-Assembler is retained as a separate menu entry.
+
+#### `?` — Memory Map
+
+The Memory Map utility is adapted to the Replica-1 TE layout.
+
+The complete routine includes the CRC code needed when ROM is encountered and returns to the custom loader menu when finished.
+
+### Original numbered applications
+
+The original numbered applications remain in the ROM:
+
+- `1` — Apple 30th Anniversary Demo
+- `2` — Tic-Tac-Toe
+- `3` — Lunar Lander
+- `4` — Little Tower
+- `5` — C64 Maze
+- `6` — Micro-Chess
+- `7` — PasArt
+- `8` — Cellular
+- `9` — Mastermind
+- `0` — Nim
+
+`M) Mandelbrot` is also retained.
+
+---
+
+## Replica-1 TE technical notes
+
+### Why the Apple II Monitor is not included
+
+The upstream loader includes an Apple II Monitor in the `$7xxx` address range.
+
+On a Replica-1 TE, `$0000-$7FFF` is already internal RAM. Mapping external ROM into page `7` would overlap that RAM.
+
+The Apple II Monitor is therefore not included in the current Replica-1 TE image.
+
+Its original menu row is used by:
+
+```text
+K) KRUSADER
+```
+
+which jumps directly to the Replica-1 TE's built-in Krusader at `$F000`.
+
+Woz Monitor remains available through:
+
+```text
+W) WOZMON
+```
+
+using the built-in WozMon at `$FF00`.
+
+### 40-column display behavior
+
+The Replica-1 TE character display is 40 columns wide.
+
+Writing the 40th printable character already advances the cursor to the next row. Therefore the Replica-1 menu deliberately does **not** send an additional carriage return after its 40-character separator lines.
+
+Without this change, an empty display row would be consumed and the first row of the `APPLE LOADER` ASCII logo could scroll off the 24-row screen.
+
+This behavior has been verified on real Replica-1 TE hardware.
 
 ---
 
 # Original Apple-1 ROM
 
-`32KA1COMPIL.BIN` is the original/upstream loader image.
+## `32KA1COMPIL.BIN`
 
-It is built from `32KA1COMPIL.json` and the sources and binaries in `src/`, `software/` and `patches/`.
+`32KA1COMPIL.BIN` is the original/upstream Apple-1 loader image.
 
-Start it with:
+It is built from:
+
+- `32KA1COMPIL.json`
+- sources in `src/`
+- program binaries in `software/`
+- patches in `patches/`
+
+Start it from WozMon with:
 
 ```text
 2000R
 ```
 
-The original configuration includes the Apple II Monitor, Apple II Mini-Assembler, memory tests, Integer BASIC and WozMon according to the upstream memory map.
+The original configuration includes functions such as:
 
-For the original ROM's detailed program descriptions and hardware assumptions, see the upstream project:
+- Apple II Monitor
+- Apple II Mini-Assembler
+- memory tests
+- Integer BASIC
+- Woz Monitor
+- the original loader applications
 
-https://github.com/fstark/apple1loader
+For the original ROM's detailed memory layout and hardware assumptions, see the upstream project:
 
-Do not use the Replica-1 TE jumper configuration above as a general configuration for the original Apple-1 image; the two ROMs target different memory layouts.
+[https://github.com/fstark/apple1loader](https://github.com/fstark/apple1loader)
+
+> **Do not use the Replica-1 TE jumper configuration as a general configuration for the original Apple-1 image.** The two images target different memory maps.
 
 ---
 
-# Additional software
+## Additional software
 
-The fork also contains additional Apple-1 program images in `software/` for preservation, testing and possible future ROM builds.
+The fork also contains additional Apple-1 program images in `software/` for preservation, testing, and possible future ROM builds.
 
 Examples include:
 
@@ -188,23 +379,23 @@ wumpus
 
 Not every file in `software/` is included in `32KREPLICA1.BIN`.
 
-In particular, some programs were evaluated during development but were intentionally not kept in the final menu. Files that are present in the repository should therefore not automatically be interpreted as contents of either ROM image.
+Some programs were evaluated during development but intentionally not kept in the final menu. The presence of a file in `software/` therefore does not automatically mean it is included in either ROM image.
 
 ---
 
-# Building the upstream ROM
+# Building the ROM
 
-The existing build system is inherited from the upstream repository.
+## Requirements
 
-Requirements include:
+The inherited upstream build system uses:
 
 - `python3`
 - `xa`
-- the `cc65` toolchain (`ca65` / `ld65`)
+- `cc65` toolchain (`ca65` / `ld65`)
 - `wget`
 - optionally `minipro` for EEPROM programming
 
-Build the original image with:
+## Build the original Apple-1 image
 
 ```sh
 make
@@ -216,17 +407,26 @@ This creates:
 32KA1COMPIL.BIN
 ```
 
-The EEPROM target is:
+## Program the EEPROM
 
 ```sh
 make eeprom
 ```
 
-The current Makefile programs an `X28C256` with `minipro`.
+The current EEPROM target uses `minipro` and is configured for an `X28C256`.
 
-## Replica-1 image build status
+## Replica-1 TE build status
 
-At present, `32KREPLICA1.BIN` is committed as a **prebuilt image**. The current `Makefile` and `32KA1COMPIL.json` describe the upstream `32KA1COMPIL.BIN`, not the Replica-1 TE variant.
+`32KREPLICA1.BIN` is currently committed as a **prebuilt 32 KiB image**.
+
+The current:
+
+```text
+Makefile
+32KA1COMPIL.json
+```
+
+describe the upstream `32KA1COMPIL.BIN`, not the Replica-1 TE image.
 
 Therefore:
 
@@ -236,14 +436,12 @@ make
 
 does **not** reproduce `32KREPLICA1.BIN`.
 
-A future improvement would be to add a separate configuration/build target, for example:
+A future improvement would be a separate Replica-1 configuration and build target, for example:
 
 ```text
 32KREPLICA1.json
 make replica1
 ```
-
-so the Replica-1 image can be rebuilt entirely from source.
 
 ---
 
@@ -251,25 +449,29 @@ so the Replica-1 image can be rebuilt entirely from source.
 
 ```text
 .
-├── 32KA1COMPIL.BIN      # upstream 32 KiB ROM
+├── 32KA1COMPIL.BIN      # original/upstream 32 KiB ROM
 ├── 32KA1COMPIL.json     # upstream ROM layout/configuration
 ├── 32KREPLICA1.BIN      # Replica-1 TE 32 KiB ROM
-├── Makefile              # currently builds the upstream image
-├── makerom.py            # ROM image builder
-├── src/                  # assembled source programs / loader code
-├── patches/              # patches used by the upstream image
-├── software/             # program binaries and added Apple-1 software
-├── utils/                # helper tools
-└── images/               # screenshots / documentation images
+├── Makefile             # currently builds the upstream ROM
+├── makerom.py           # ROM image builder
+├── src/                 # assembled source programs / loader code
+├── patches/             # upstream patches
+├── software/            # Apple-1 program binaries
+├── utils/               # helper tools
+└── images/              # screenshots and documentation images
 ```
 
 ---
 
 # Credits
 
-The original loader project, ROM layout and menu were created by **Fred Stark** and **Antoine Bercovici** in 2024.
+The original loader project, ROM layout, and menu were created by **Fred Stark** and **Antoine Bercovici** in 2024.
 
-The ROM collection incorporates historical Apple-1 software from multiple authors. Important credits from the upstream project include:
+This repository is derived from:
+
+[https://github.com/fstark/apple1loader](https://github.com/fstark/apple1loader)
+
+The ROM collection incorporates historical Apple-1 software from multiple authors.
 
 | Software | Author / credit |
 | --- | --- |
@@ -283,15 +485,19 @@ The ROM collection incorporates historical Apple-1 software from multiple author
 | Mini-Assembler | Allen Baum, 1976 |
 | Mandelbrot | Fred Stark, 2024 |
 | Memory Map | Fred Stark, 2024 |
-| Lunar Lander | author currently unknown |
 | PasArt | Ken Wesson, 2007 |
+| Lunar Lander | author currently unknown |
 | Cellular | author currently unknown |
 | Nim | author currently unknown |
 
-The Replica-1 TE image is an adaptation of that work for the Briel Replica-1 TE and its different RAM/ROM map.
+The Replica-1 TE image adapts this work to the Briel Replica-1 TE and its different RAM/ROM map.
 
 Please preserve the original authorship information when redistributing binaries or derived ROM images.
 
-## Licensing
+---
 
-This repository contains software from several historical sources and does not currently expose a single root license covering every component. Check the provenance and licensing of individual files before redistribution or reuse.
+# Licensing
+
+This repository contains software from several historical sources and does not currently expose a single root license covering every component.
+
+Check the provenance and licensing of individual files before redistribution or reuse.
